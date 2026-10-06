@@ -9,6 +9,7 @@ import {
   LogIn,
   ShieldCheck,
   Mic,
+  Crown,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
@@ -16,6 +17,7 @@ export const Header: React.FC = () => {
   const {
     user,
     isAuthenticated,
+    isMasterAdmin,
     selectedDate,
     setSelectedDate,
     changeDateByDays,
@@ -80,10 +82,16 @@ export const Header: React.FC = () => {
 
           {/* User greeting */}
           {user && (
-            <div className="hidden xl:flex items-center pl-4 border-l border-slate-200">
+            <div className="hidden xl:flex items-center gap-2 pl-4 border-l border-slate-200">
               <span className="text-xs text-slate-600 font-medium">
                 Olá, <strong className="text-slate-900 font-semibold">{user.name.split(' ')[0]}</strong>
               </span>
+              {isMasterAdmin && (
+                <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500/15 via-emerald-500/15 to-amber-500/15 text-amber-900 border border-amber-400/60 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-xs">
+                  <Crown className="w-3 h-3 text-amber-600 shrink-0" />
+                  <span>Master Fundador</span>
+                </span>
+              )}
             </div>
           )}
         </div>

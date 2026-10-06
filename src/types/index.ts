@@ -2,6 +2,8 @@ export type GoalType = 'cutting' | 'bulking' | 'maintenance' | 'weight_loss' | '
 
 export type PreferredUnit = 'metric' | 'imperial';
 
+export const MASTER_ADMIN_EMAIL = 'nuncaparedelutar1988@gmail.com';
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -16,6 +18,9 @@ export interface UserProfile {
   targetWeight: number; // in kg
   height: number; // in cm
   preferredUnit: PreferredUnit;
+  isMasterAdmin?: boolean;
+  role?: 'owner' | 'admin' | 'user';
+  plan?: 'free' | 'pro' | 'vip';
   createdAt: string;
   updatedAt: string;
 }

@@ -8,7 +8,8 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider } from '../../firebase/config';
 import { useApp } from '../../context/AppContext';
-import { X, Lock, Mail, User, Sparkles, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
+import { X, Lock, Mail, User, Sparkles, AlertCircle, ArrowRight, ShieldCheck, Crown } from 'lucide-react';
+import { MASTER_ADMIN_EMAIL } from '../../types';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -21,7 +22,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   defaultMode = 'login',
 }) => {
-  const { showToast } = useApp();
+  const { showToast, loginWithMasterEmail } = useApp();
   const [mode, setMode] = useState<'login' | 'register'>(defaultMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -54,6 +55,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+
+    // Master Founder Bypass & Full Instant Access
+    if (email.trim().toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) {
+      await loginWithMasterEmail();
+      onClose();
+      setIsLoading(false);
+      return;
+    }
 
     try {
       if (mode === 'register') {
@@ -144,6 +153,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <span>{error}</span>
             </div>
           )}
+
+          {/* Master Founder Direct Access Button */}
+          <button
+            type="button"
+            id="btn-login-master-founder"
+            onClick={async () => {
+              await loginWithMasterEmail();
+              onClose();
+            }}
+            disabled={isLoading}
+            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-emerald-600 to-amber-600 hover:from-amber-600 hover:to-emerald-700 active:scale-[0.99] text-white font-bold text-xs flex items-center justify-between transition-all cursor-pointer shadow-md shadow-emerald-700/20 border border-amber-300/40 disabled:opacity-50 group"
+          >
+            <div className="flex items-center gap-2.5 text-left">
+              <div className="w-7 h-7 rounded-lg bg-amber-400/20 border border-amber-300/30 flex items-center justify-center shrink-0">
+                <Crown className="w-4 h-4 text-amber-200 group-hover:scale-110 transition-transform" />
+              </div>
+              <div>
+                <p className="font-black text-white text-xs leading-none">Acesso Master do Fundador</p>
+                <p className="text-[10px] text-amber-100 font-mono mt-0.5">{MASTER_ADMIN_EMAIL}</p>
+              </div>
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full border border-white/20">
+              1-Clique
+            </span>
+          </button>
 
           {/* Primary Action: Google Login */}
           <button

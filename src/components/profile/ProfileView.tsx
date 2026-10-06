@@ -18,10 +18,11 @@ import {
   Calendar,
   Stethoscope,
   Share2,
+  Crown,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { calculateRecommendedTargets } from '../../domain/nutrition/calculations';
-import { UserProfile } from '../../types';
+import { UserProfile, MASTER_ADMIN_EMAIL } from '../../types';
 import { NotificationSettingsCard } from '../notifications/NotificationSettingsCard';
 
 export const ProfileView: React.FC = () => {
@@ -29,6 +30,8 @@ export const ProfileView: React.FC = () => {
     user,
     targets,
     isAuthenticated,
+    isMasterAdmin,
+    loginWithMasterEmail,
     firebaseUser,
     loginWithGoogle,
     logoutUser,
@@ -170,24 +173,46 @@ export const ProfileView: React.FC = () => {
           )}
 
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-bold text-base text-white">
-                {firebaseUser?.displayName || user?.name || (isAuthenticated ? 'Usuário Conectado' : 'Modo Convidado')}
+                {isMasterAdmin
+                  ? 'Barrisenn (Fundador & Master Owner)'
+                  : firebaseUser?.displayName || user?.name || (isAuthenticated ? 'Usuário Conectado' : 'Modo Convidado')}
               </h3>
-              {isAuthenticated && (
+              {isMasterAdmin ? (
+                <span className="inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-300/40 uppercase tracking-wider">
+                  <Crown className="w-3 h-3 text-amber-300" />
+                  VIP Vitalício Master
+                </span>
+              ) : isAuthenticated ? (
                 <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                   <ShieldCheck className="w-3 h-3" />
                   Nuvem Sincronizada
                 </span>
-              )}
+              ) : null}
             </div>
             <p className="text-xs text-slate-300">
-              {firebaseUser?.email || (isAuthenticated ? 'Autenticado' : 'Faça login para salvar seus dados na nuvem')}
+              {isMasterAdmin
+                ? MASTER_ADMIN_EMAIL
+                : firebaseUser?.email || (isAuthenticated ? 'Autenticado' : 'Faça login para salvar seus dados na nuvem')}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {!isMasterAdmin && (
+            <button
+              type="button"
+              id="btn-activate-master-profile"
+              onClick={loginWithMasterEmail}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-600 hover:from-amber-400 hover:to-emerald-500 text-white text-xs font-black uppercase tracking-wider border border-amber-300/30 shadow-md transition-all cursor-pointer"
+              title="Ativar credencial Master de Fundador"
+            >
+              <Crown className="w-3.5 h-3.5 text-amber-200" />
+              <span>Acesso Master Fundador</span>
+            </button>
+          )}
+
           {isAuthenticated ? (
             <button
               type="button"
@@ -240,6 +265,41 @@ export const ProfileView: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Master Privileges Banner */}
+      {isMasterAdmin && (
+        <div className="p-5 bg-gradient-to-br from-amber-950/80 via-slate-900 to-emerald-950 text-white rounded-3xl border border-amber-400/40 shadow-lg space-y-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-400/20 border border-amber-300/40 flex items-center justify-center text-amber-300 shrink-0">
+                <Crown className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="font-black text-sm text-amber-200">Painel de Acesso Master Irrestrito</h4>
+                <p className="text-[11px] text-amber-100/70 font-mono">Credencial Proprietário: {MASTER_ADMIN_EMAIL}</p>
+              </div>
+            </div>
+            <span className="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 font-black text-[11px] uppercase tracking-wider">
+              100% das Funcionalidades Liberadas
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 text-xs">
+            <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+              <p className="font-bold text-emerald-400">⚡ IA em Alta Potência</p>
+              <p className="text-slate-300 text-[11px]">Fotos ilimitadas, Gemini 3.8 Vision e Voz Live desbloqueados sem cotas.</p>
+            </div>
+            <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+              <p className="font-bold text-amber-400">📊 Gestão & Vendas</p>
+              <p className="text-slate-300 text-[11px]">Controle de MRR, gateway de checkout PIX/Cartão e gestão de atletas.</p>
+            </div>
+            <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+              <p className="font-bold text-teal-400">📑 Exportações Ilimitadas</p>
+              <p className="text-slate-300 text-[11px]">Geração de laudos clínicos em PDF e relatórios de vendas em XLSX.</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Page Title & Save Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 bg-white rounded-3xl border border-slate-200 shadow-xs">

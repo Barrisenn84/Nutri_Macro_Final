@@ -12,6 +12,7 @@ import {
   AIAnalysisResult,
   NotificationSettings,
   ActiveMealReminder,
+  MASTER_ADMIN_EMAIL,
 } from '../types';
 import {
   FirestoreUserRepository,
@@ -53,8 +54,10 @@ interface AppContextType {
   firebaseUser: FirebaseUser | null;
   targets: NutritionTargets | null;
   isAuthenticated: boolean;
+  isMasterAdmin: boolean;
   loginWithGoogle: () => Promise<void>;
   loginDemoUser: () => Promise<void>;
+  loginWithMasterEmail: () => Promise<void>;
   logoutUser: () => Promise<void>;
   updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
   updateTargets: (targets: Partial<NutritionTargets>) => Promise<void>;
@@ -179,12 +182,41 @@ const foodRepo = new FirestoreFoodDatabaseRepository();
 const waterRepo = new FirestoreWaterRepository();
 const foodVisionService: IFoodVisionService = new GeminiFoodVisionService();
 
+export const MASTER_ADMIN_USER: UserProfile = {
+  id: 'user_master_owner',
+  name: 'Barrisenn (Fundador & Master Owner)',
+  email: MASTER_ADMIN_EMAIL,
+  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256',
+  age: 36,
+  gender: 'male',
+  activityLevel: 'very_active',
+  goal: 'hypertrophy',
+  currentWeight: 78.5,
+  startWeight: 75.0,
+  targetWeight: 82.0,
+  height: 180,
+  preferredUnit: 'metric',
+  isMasterAdmin: true,
+  role: 'owner',
+  plan: 'vip',
+  createdAt: '2026-01-01T00:00:00Z',
+  updatedAt: new Date().toISOString(),
+};
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentPage, setCurrentPage] = useState<ActivePage>('home');
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [targets, setTargets] = useState<NutritionTargets | null>(null);
+
+  const isMasterAdmin = useMemo(() => {
+    return Boolean(
+      user?.email?.trim().toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase() ||
+      user?.isMasterAdmin ||
+      (typeof window !== 'undefined' && localStorage.getItem('nutrimacro_master_session') === 'true')
+    );
+  }, [user]);
 
   const getTodayString = () => new Date().toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = useState<string>(getTodayString());
@@ -415,6 +447,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
+
+      const isMasterSession =
+        typeof window !== 'undefined' &&
+        localStorage.getItem('nutrimacro_master_session') === 'true';
+
+      if (isMasterSession) {
+        setUser(MASTER_ADMIN_USER);
+        setTargets(INITIAL_TARGETS);
+        setIsAuthenticated(true);
+        const [mealsData, measurementsData, photosData] = await Promise.all([
+          mealRepo.getAllMeals().catch(() => []),
+          measurementRepo.getAllMeasurements().catch(() => []),
+          measurementRepo.getAllEvolutionPhotos().catch(() => []),
+        ]);
+        setAllMeals(Array.isArray(mealsData) && mealsData.length > 0 ? mealsData : INITIAL_MEALS);
+        setMeasurements(Array.isArray(measurementsData) && measurementsData.length > 0 ? measurementsData : INITIAL_MEASUREMENTS);
+        setEvolutionPhotos(Array.isArray(photosData) && photosData.length > 0 ? photosData : INITIAL_EVOLUTION_PHOTOS);
+        return;
+      }
+
       const isCleared =
         typeof window !== 'undefined' &&
         localStorage.getItem('nutrimacro_data_cleared') === 'true';
@@ -545,9 +597,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAuthModalOpen(true);
   }, []);
 
+  const loginWithMasterEmail = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('nutrimacro_master_session', 'true');
+        localStorage.setItem('nutrimacro_master_email', MASTER_ADMIN_EMAIL);
+      }
+      setUser(MASTER_ADMIN_USER);
+      setTargets(INITIAL_TARGETS);
+      setIsAuthenticated(true);
+      setAuthModalOpen(false);
+      showToast('👑 Bem-vindo, Fundador! Acesso Master Total liberado (Plano VIP Vitalício).');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [showToast]);
+
   const logoutUser = useCallback(async () => {
     try {
       setIsLoading(true);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('nutrimacro_master_session');
+        localStorage.removeItem('nutrimacro_master_email');
+      }
       await signOut(auth);
       showToast('Sessão encerrada com sucesso.');
     } catch (err) {
@@ -903,8 +976,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       firebaseUser,
       targets,
       isAuthenticated,
+      isMasterAdmin,
       loginWithGoogle,
       loginDemoUser,
+      loginWithMasterEmail,
       logoutUser,
       updateUserProfile,
       updateTargets: updateTargetsCallback,
@@ -1013,8 +1088,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       firebaseUser,
       targets,
       isAuthenticated,
+      isMasterAdmin,
       loginWithGoogle,
       loginDemoUser,
+      loginWithMasterEmail,
       logoutUser,
       updateUserProfile,
       updateTargetsCallback,
