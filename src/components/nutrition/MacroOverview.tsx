@@ -17,6 +17,12 @@ export const MacroOverview: React.FC = () => {
           percent={dailyGoalProgress.caloriesPercent}
           remaining={dailyGoalProgress.caloriesRemaining}
           isExceeded={dailyGoalProgress.isCaloriesExceeded}
+          adjustedTarget={dailyGoalProgress.adjustedCaloriesTarget}
+          activeBurnBonus={
+            dailyGoalProgress.adjustedCaloriesTarget && dailyGoalProgress.adjustedCaloriesTarget > targets.calories
+              ? dailyGoalProgress.adjustedCaloriesTarget - targets.calories
+              : undefined
+          }
         />
         <MacroCard
           type="protein"

@@ -11,6 +11,8 @@ interface MacroCardProps {
   percent: number;
   remaining: number;
   isExceeded?: boolean;
+  adjustedTarget?: number;
+  activeBurnBonus?: number;
 }
 
 export const MacroCard: React.FC<MacroCardProps> = ({
@@ -21,6 +23,8 @@ export const MacroCard: React.FC<MacroCardProps> = ({
   percent,
   remaining,
   isExceeded = false,
+  adjustedTarget,
+  activeBurnBonus,
 }) => {
   const configs: Record<
     MacroType,
@@ -77,6 +81,11 @@ export const MacroCard: React.FC<MacroCardProps> = ({
   const isCalories = type === 'calories';
   const displayUnit = isCalories ? 'kcal' : unit;
 
+  // Clean rounding avoiding JS floating point representation quirks (e.g., 30.400000000000006)
+  const safeConsumed = Math.round(consumed * 10) / 10;
+  const safeRemaining = Math.round(Math.abs(remaining) * 10) / 10;
+  const effectiveTarget = isCalories && adjustedTarget ? adjustedTarget : target;
+
   return (
     <div
       id={`macro-card-${type}`}
@@ -106,9 +115,11 @@ export const MacroCard: React.FC<MacroCardProps> = ({
         <div className="mt-2 flex items-baseline justify-between">
           <div className="flex items-baseline gap-1">
             <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              {consumed}
+              {safeConsumed.toLocaleString('pt-BR')}
             </span>
-            <span className="text-xs font-semibold text-slate-400">/ {target} {displayUnit}</span>
+            <span className="text-xs font-semibold text-slate-400">
+              / {effectiveTarget.toLocaleString('pt-BR')} {displayUnit}
+            </span>
           </div>
         </div>
       </div>
@@ -123,17 +134,28 @@ export const MacroCard: React.FC<MacroCardProps> = ({
         </div>
 
         <div className="flex items-center justify-between text-[11px] text-slate-500">
-          <span>
+          <span className="font-semibold text-slate-700">
             {isCalories
               ? isExceeded
-                ? `Excedeu ${Math.abs(remaining)} kcal`
-                : `Restam ${remaining} kcal`
+                ? `Excedeu ${safeRemaining.toLocaleString('pt-BR')} kcal`
+                : `Restam ${safeRemaining.toLocaleString('pt-BR')} kcal`
               : isExceeded
-              ? `Meta atingida (+${Math.abs(remaining)}g)`
-              : `Faltam ${remaining}g`}
+              ? `Meta atingida (+${safeRemaining}g)`
+              : `Faltam ${safeRemaining}g`}
           </span>
-          <span className="font-mono text-[10px] text-slate-400">
-            {Math.max(0, target - consumed)} restantes
+
+          <span className="font-medium text-[10px] text-slate-400">
+            {isCalories ? (
+              activeBurnBonus && activeBurnBonus > 0 ? (
+                <span className="text-amber-600 font-bold">
+                  +{activeBurnBonus} kcal treino
+                </span>
+              ) : (
+                `Alvo: ${target.toLocaleString('pt-BR')} kcal`
+              )
+            ) : (
+              `Alvo: ${target}g`
+            )}
           </span>
         </div>
       </div>

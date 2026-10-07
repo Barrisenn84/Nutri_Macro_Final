@@ -306,30 +306,41 @@ export interface NutritionistReportOptions {
 // ==========================================
 // SMARTWATCH INTEGRATION TYPES
 // ==========================================
-export type SmartwatchProvider = 'apple_health' | 'health_connect' | 'garmin' | 'wear_os';
+export type SmartwatchProvider =
+  | 'apple_health'
+  | 'health_connect'
+  | 'samsung_health'
+  | 'garmin'
+  | 'wear_os'
+  | 'amazfit';
 
 export type SmartwatchCalorieStrategy = 'maintain_deficit' | 'eat_back_half' | 'eat_back_all';
 
 export interface SmartwatchActivityData {
   provider: SmartwatchProvider;
   deviceName: string;
+  deviceModel?: string;
   connected: boolean;
   lastSyncedAt: string;
   caloriesBurnedActive: number; // Kcal queimadas em treino
   stepsCount: number; // Passos no dia
   heartRateAvg: number; // BPM médio
   activeMinutes: number; // Minutos de treino ativo
-  workoutType?: string; // Ex: "Musculação", "Corrida", "Crossfit"
+  workoutType?: string; // Ex: "Musculação Hipertrofia", "Corrida na Esteira", "CrossFit"
   batteryLevelPercent?: number;
+  vo2Max?: number;
+  bodyFatPercentEstimated?: number;
 }
 
 export interface SmartwatchConfig {
   enabled: boolean;
   provider: SmartwatchProvider;
+  deviceModel?: string;
   calorieStrategy: SmartwatchCalorieStrategy;
   autoSync: boolean;
   syncWater: boolean;
   wristHapticReminders: boolean;
+  voiceInputEnabled?: boolean;
 }
 
 export interface SmartwatchAIWorkoutAdvice {

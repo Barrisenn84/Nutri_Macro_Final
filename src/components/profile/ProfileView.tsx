@@ -572,17 +572,9 @@ export const ProfileView: React.FC = () => {
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
           <div className="p-3 rounded-2xl bg-slate-800/60 border border-slate-700/60">
-            <span className="text-[10px] text-slate-400 block">Provedor Ativo</span>
-            <span className="font-bold text-slate-200 capitalize mt-0.5 block">
-              {smartwatchConfig.provider === 'apple_health'
-                ? 'Apple Health'
-                : smartwatchConfig.provider === 'health_connect'
-                ? 'Health Connect / Google'
-                : smartwatchConfig.provider === 'wear_os'
-                ? 'Wear OS / Galaxy Watch'
-                : smartwatchConfig.provider === 'garmin'
-                ? 'Garmin Connect'
-                : 'Simulador Integrado'}
+            <span className="text-[10px] text-slate-400 block">Dispositivo Conectado</span>
+            <span className="font-bold text-slate-200 mt-0.5 block truncate">
+              {smartwatchData.deviceName}
             </span>
           </div>
 

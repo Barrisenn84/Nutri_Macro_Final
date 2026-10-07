@@ -916,48 +916,174 @@ Forneça um diagnóstico comercial de alto impacto, projeção de receita para o
   // ==========================================
   // 13. SMARTWATCH & WEARABLES API ENDPOINTS
   // ==========================================
+  // 13. SMARTWATCH & WEARABLES API ENDPOINTS
+  // ==========================================
   let activeSmartwatchData: any = {
-    provider: 'apple_health',
-    deviceName: 'Apple Watch Series 9',
+    provider: 'health_connect',
+    deviceName: 'Samsung Galaxy Watch Ultra',
+    deviceModel: 'galaxy_watch_ultra',
     connected: true,
     lastSyncedAt: new Date().toISOString(),
-    caloriesBurnedActive: 420,
-    stepsCount: 7850,
-    heartRateAvg: 138,
-    activeMinutes: 52,
-    workoutType: 'Musculação Hipertrofia',
-    batteryLevelPercent: 84,
+    caloriesBurnedActive: 520,
+    stepsCount: 9420,
+    heartRateAvg: 142,
+    activeMinutes: 56,
+    workoutType: 'Musculação Hipertrofia & Cardio',
+    batteryLevelPercent: 91,
+    vo2Max: 50,
+    bodyFatPercentEstimated: 14.5,
   };
 
   // Sync incoming telemetry from smartwatch / companion apps
   app.post('/api/smartwatch/sync', (req: Request, res: Response) => {
     const {
-      provider = 'apple_health',
-      deviceName = 'Smartwatch',
-      caloriesBurnedActive = 0,
-      stepsCount = 0,
-      heartRateAvg = 120,
-      activeMinutes = 30,
-      workoutType = 'Treino Geral',
-      batteryLevelPercent = 85,
+      provider = activeSmartwatchData.provider || 'health_connect',
+      deviceName = activeSmartwatchData.deviceName || 'Samsung Galaxy Watch Ultra',
+      deviceModel = activeSmartwatchData.deviceModel || 'galaxy_watch_ultra',
+      caloriesBurnedActive = activeSmartwatchData.caloriesBurnedActive,
+      stepsCount = activeSmartwatchData.stepsCount,
+      heartRateAvg = activeSmartwatchData.heartRateAvg,
+      activeMinutes = activeSmartwatchData.activeMinutes,
+      workoutType = activeSmartwatchData.workoutType,
+      batteryLevelPercent = activeSmartwatchData.batteryLevelPercent,
+      vo2Max = activeSmartwatchData.vo2Max,
+      bodyFatPercentEstimated = activeSmartwatchData.bodyFatPercentEstimated,
     } = req.body;
 
     activeSmartwatchData = {
       provider,
       deviceName,
+      deviceModel,
       connected: true,
       lastSyncedAt: new Date().toISOString(),
       caloriesBurnedActive: Math.max(0, Math.round(Number(caloriesBurnedActive) || 0)),
       stepsCount: Math.max(0, Math.round(Number(stepsCount) || 0)),
       heartRateAvg: Math.max(40, Math.round(Number(heartRateAvg) || 120)),
       activeMinutes: Math.max(0, Math.round(Number(activeMinutes) || 0)),
-      workoutType,
+      workoutType: workoutType || 'Treino Geral',
       batteryLevelPercent: Math.min(100, Math.max(0, Number(batteryLevelPercent) || 85)),
+      vo2Max: vo2Max ? Number(vo2Max) : undefined,
+      bodyFatPercentEstimated: bodyFatPercentEstimated ? Number(bodyFatPercentEstimated) : undefined,
     };
 
     res.json({
       success: true,
-      message: 'Telemetria do smartwatch sincronizada com sucesso!',
+      message: `Telemetria de ${deviceName} sincronizada com sucesso!`,
+      data: activeSmartwatchData,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  // Switch or configure active wearable device
+  app.post('/api/smartwatch/select-device', (req: Request, res: Response) => {
+    const { deviceModel = 'galaxy_watch_ultra' } = req.body;
+
+    if (deviceModel === 'galaxy_watch_ultra') {
+      activeSmartwatchData = {
+        provider: 'health_connect',
+        deviceName: 'Samsung Galaxy Watch Ultra',
+        deviceModel: 'galaxy_watch_ultra',
+        connected: true,
+        lastSyncedAt: new Date().toISOString(),
+        caloriesBurnedActive: 520,
+        stepsCount: 9420,
+        heartRateAvg: 142,
+        activeMinutes: 56,
+        workoutType: 'Musculação Hipertrofia & Cardio',
+        batteryLevelPercent: 91,
+        vo2Max: 50,
+        bodyFatPercentEstimated: 14.5,
+      };
+    } else if (deviceModel === 'galaxy_watch_7') {
+      activeSmartwatchData = {
+        provider: 'health_connect',
+        deviceName: 'Samsung Galaxy Watch 7',
+        deviceModel: 'galaxy_watch_7',
+        connected: true,
+        lastSyncedAt: new Date().toISOString(),
+        caloriesBurnedActive: 460,
+        stepsCount: 8650,
+        heartRateAvg: 136,
+        activeMinutes: 50,
+        workoutType: 'Treino Funcional',
+        batteryLevelPercent: 88,
+      };
+    } else if (deviceModel === 'apple_watch_ultra_2') {
+      activeSmartwatchData = {
+        provider: 'apple_health',
+        deviceName: 'Apple Watch Ultra 2',
+        deviceModel: 'apple_watch_ultra_2',
+        connected: true,
+        lastSyncedAt: new Date().toISOString(),
+        caloriesBurnedActive: 490,
+        stepsCount: 8800,
+        heartRateAvg: 140,
+        activeMinutes: 54,
+        workoutType: 'Musculação Hipertrofia',
+        batteryLevelPercent: 94,
+      };
+    } else if (deviceModel === 'apple_watch_s10') {
+      activeSmartwatchData = {
+        provider: 'apple_health',
+        deviceName: 'Apple Watch Series 10',
+        deviceModel: 'apple_watch_s10',
+        connected: true,
+        lastSyncedAt: new Date().toISOString(),
+        caloriesBurnedActive: 420,
+        stepsCount: 7850,
+        heartRateAvg: 138,
+        activeMinutes: 52,
+        workoutType: 'Musculação Hipertrofia',
+        batteryLevelPercent: 84,
+      };
+    } else if (deviceModel === 'garmin_fenix_8') {
+      activeSmartwatchData = {
+        provider: 'garmin',
+        deviceName: 'Garmin Fenix 8',
+        deviceModel: 'garmin_fenix_8',
+        connected: true,
+        lastSyncedAt: new Date().toISOString(),
+        caloriesBurnedActive: 580,
+        stepsCount: 11200,
+        heartRateAvg: 145,
+        activeMinutes: 65,
+        workoutType: 'Corrida & Treino de Força',
+        batteryLevelPercent: 98,
+        vo2Max: 54,
+      };
+    } else if (deviceModel === 'pixel_watch_3') {
+      activeSmartwatchData = {
+        provider: 'wear_os',
+        deviceName: 'Google Pixel Watch 3',
+        deviceModel: 'pixel_watch_3',
+        connected: true,
+        lastSyncedAt: new Date().toISOString(),
+        caloriesBurnedActive: 410,
+        stepsCount: 7600,
+        heartRateAvg: 132,
+        activeMinutes: 45,
+        workoutType: 'Musculação',
+        batteryLevelPercent: 82,
+      };
+    } else if (deviceModel === 'amazfit_balance') {
+      activeSmartwatchData = {
+        provider: 'amazfit',
+        deviceName: 'Amazfit Balance (Zepp OS)',
+        deviceModel: 'amazfit_balance',
+        connected: true,
+        lastSyncedAt: new Date().toISOString(),
+        caloriesBurnedActive: 440,
+        stepsCount: 8100,
+        heartRateAvg: 134,
+        activeMinutes: 48,
+        workoutType: 'Musculação',
+        batteryLevelPercent: 90,
+      };
+    }
+
+    res.json({
+      success: true,
+      message: `Dispositivo alterado para ${activeSmartwatchData.deviceName}!`,
       data: activeSmartwatchData,
       timestamp: new Date().toISOString(),
     });

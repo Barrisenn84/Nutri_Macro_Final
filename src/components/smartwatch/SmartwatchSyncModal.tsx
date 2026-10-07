@@ -17,6 +17,10 @@ import {
   ShieldCheck,
   Zap,
   Info,
+  Crown,
+  Mic,
+  BatteryCharging,
+  Radio,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { SmartwatchProvider, SmartwatchCalorieStrategy } from '../../types';
@@ -31,6 +35,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({ isOpen
     smartwatchData,
     smartwatchConfig,
     updateSmartwatchConfig,
+    selectSmartwatchModel,
     syncSmartwatchData,
     isSyncingSmartwatch,
     smartwatchAdvice,
@@ -40,6 +45,8 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({ isOpen
     dailyGoalProgress,
     targets,
     showToast,
+    isMasterAdmin,
+    setVoiceAssistantOpen,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'status' | 'watch_face' | 'settings'>('status');
@@ -51,39 +58,111 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({ isOpen
     name: string;
     description: string;
     icon: string;
-    color: string;
   }> = [
-    {
-      id: 'apple_health',
-      name: 'Apple Watch & HealthKit',
-      description: 'Sincronização nativa via Apple Saúde (iOS)',
-      icon: '🍏',
-      color: 'border-slate-800 bg-slate-900/5',
-    },
     {
       id: 'health_connect',
       name: 'Samsung Galaxy Watch & Health Connect',
-      description: 'Galaxy Watch 4, 5, 6, 7 e Wear OS do Google',
+      description: 'Galaxy Watch Ultra, 7, 6, 5 e Wear OS da Samsung/Google',
       icon: '⌚',
-      color: 'border-blue-600/30 bg-blue-50/20',
+    },
+    {
+      id: 'apple_health',
+      name: 'Apple Watch & HealthKit',
+      description: 'Apple Watch Ultra 2, Series 10, 9 e SE via Apple Saúde',
+      icon: '🍏',
     },
     {
       id: 'garmin',
-      name: 'Garmin & Fitbit Connect',
-      description: 'Sincronização esportiva e relógios de endurance',
+      name: 'Garmin Connect & GPS',
+      description: 'Fenix 8, Forerunner 965 e relógios de performance',
       icon: '🏃',
-      color: 'border-emerald-600/30 bg-emerald-50/20',
+    },
+    {
+      id: 'wear_os',
+      name: 'Google Wear OS (Pixel & Xiaomi)',
+      description: 'Pixel Watch 3, TicWatch Pro 5 e Xiaomi Watch 2',
+      icon: '🤖',
+    },
+    {
+      id: 'amazfit',
+      name: 'Amazfit & Zepp OS',
+      description: 'Amazfit Balance, T-Rex Ultra e Cheetah Pro',
+      icon: '⚡',
     },
   ];
 
+  const wearableModels = [
+    {
+      id: 'galaxy_watch_ultra',
+      name: 'Samsung Galaxy Watch Ultra',
+      tag: 'Titanium & Botão Laranja',
+      provider: 'health_connect' as SmartwatchProvider,
+      icon: '⌚',
+      isFounderChoice: true,
+    },
+    {
+      id: 'galaxy_watch_7',
+      name: 'Samsung Galaxy Watch 7',
+      tag: 'BioActive Sensor 3nm',
+      provider: 'health_connect' as SmartwatchProvider,
+      icon: '⌚',
+    },
+    {
+      id: 'galaxy_watch_6',
+      name: 'Samsung Galaxy Watch 6 Classic',
+      tag: 'Coroa Giratória Física',
+      provider: 'health_connect' as SmartwatchProvider,
+      icon: '⌚',
+    },
+    {
+      id: 'apple_watch_ultra_2',
+      name: 'Apple Watch Ultra 2',
+      tag: 'Titanium 49mm & Action Button',
+      provider: 'apple_health' as SmartwatchProvider,
+      icon: '🍏',
+    },
+    {
+      id: 'apple_watch_s10',
+      name: 'Apple Watch Series 10',
+      tag: 'Design Fino & Tela OLED Ampla',
+      provider: 'apple_health' as SmartwatchProvider,
+      icon: '🍏',
+    },
+    {
+      id: 'garmin_fenix_8',
+      name: 'Garmin Fenix 8',
+      tag: 'Endurance Multiesportivo',
+      provider: 'garmin' as SmartwatchProvider,
+      icon: '🏃',
+    },
+    {
+      id: 'pixel_watch_3',
+      name: 'Google Pixel Watch 3',
+      tag: 'Wear OS 5 & Actua Display',
+      provider: 'wear_os' as SmartwatchProvider,
+      icon: '🤖',
+    },
+    {
+      id: 'amazfit_balance',
+      name: 'Amazfit Balance (Zepp OS)',
+      tag: 'Bateria de 14 dias & BIA',
+      provider: 'amazfit' as SmartwatchProvider,
+      icon: '⚡',
+    },
+  ];
+
+  const handleModelSelect = async (modelId: string, provider: SmartwatchProvider) => {
+    await selectSmartwatchModel(modelId, provider);
+  };
+
   const handleProviderSelect = (provider: SmartwatchProvider) => {
     updateSmartwatchConfig({ provider });
-    showToast(`Dispositivo alterado para ${provider.replace('_', ' ').toUpperCase()}`);
+    showToast(`Provedor alterado para ${provider.replace('_', ' ').toUpperCase()}`);
   };
 
   const handleStrategyChange = (calorieStrategy: SmartwatchCalorieStrategy) => {
     updateSmartwatchConfig({ calorieStrategy });
-    showToast('Estratégia calórica do treino atualizada!');
+    showToast('Estratégia calórica de treino atualizada com sucesso!');
   };
 
   const handleQuickWaterFromWatch = () => {
@@ -91,11 +170,21 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({ isOpen
     showToast('⌚ +250ml registrados com 1 toque no relógio!');
   };
 
+  const handleVoiceFromWatch = () => {
+    setVoiceAssistantOpen(true);
+    showToast('🎤 Microfone do relógio ativado! Fale sua refeição para a IA Gemini.');
+  };
+
+  const isGalaxyWatch =
+    smartwatchData.deviceName.toLowerCase().includes('galaxy') ||
+    smartwatchConfig.provider === 'health_connect' ||
+    smartwatchConfig.provider === 'samsung_health';
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in duration-200">
       <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
-        <div className="p-5 sm:p-6 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-white relative shrink-0">
+        <div className="p-5 sm:p-6 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white relative shrink-0">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
@@ -105,12 +194,18 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({ isOpen
           </button>
 
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+            <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400">
               <Watch className="w-4 h-4" />
             </div>
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
-              Integração de Relógio Inteligente
+            <span className="text-xs font-bold uppercase tracking-wider text-indigo-300">
+              Integração de Relógio Inteligente & Wearables
             </span>
+            {isMasterAdmin && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                <Crown className="w-3 h-3 text-amber-400" />
+                <span>Acesso Master Fundador</span>
+              </span>
+            )}
           </div>
 
           <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
@@ -123,7 +218,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({ isOpen
             )}
           </h2>
           <p className="text-xs text-slate-300 mt-1">
-            Conecte seu Apple Watch, Galaxy Watch ou Garmin para sincronizar calorias ativas, passos e batimentos cardíacos.
+            Conecte seu Galaxy Watch Ultra, Apple Watch ou Garmin para sincronizar calorias ativas, passos e batimentos cardíacos.
           </p>
 
           {/* Sub Nav Tabs */}
@@ -132,7 +227,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({ isOpen
               onClick={() => setActiveTab('status')}
               className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 activeTab === 'status'
-                  ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                  ? 'bg-indigo-500 text-white shadow-sm'
                   : 'text-slate-300 hover:text-white hover:bg-white/10'
               }`}
             >
@@ -144,7 +239,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({ isOpen
               onClick={() => setActiveTab('watch_face')}
               className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 activeTab === 'watch_face'
-                  ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                  ? 'bg-indigo-500 text-white shadow-sm'
                   : 'text-slate-300 hover:text-white hover:bg-white/10'
               }`}
             >
@@ -156,7 +251,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({ isOpen
               onClick={() => setActiveTab('settings')}
               className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 activeTab === 'settings'
-                  ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                  ? 'bg-indigo-500 text-white shadow-sm'
                   : 'text-slate-300 hover:text-white hover:bg-white/10'
               }`}
             >
@@ -171,53 +266,97 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({ isOpen
           {/* TAB 1: TELEMETRIA DO PULSO */}
           {activeTab === 'status' && (
             <div className="space-y-5">
-              {/* Device Selector Card */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-700 block">Dispositivo Conectado</label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  {providers.map((p) => {
-                    const isSelected = smartwatchConfig.provider === p.id;
+              {/* Device Selector with Quick Model Pills */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
+                    Escolha seu Relógio Conectado
+                  </label>
+                  <span className="text-[11px] text-slate-500 font-medium">
+                    Ativo: <strong className="text-indigo-600">{smartwatchData.deviceName}</strong>
+                  </span>
+                </div>
+
+                {/* Model Selector Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {wearableModels.map((m) => {
+                    const isCurrent =
+                      smartwatchData.deviceName.toLowerCase().includes(m.name.toLowerCase().split(' ')[1] || '---') ||
+                      smartwatchConfig.deviceModel === m.id ||
+                      (m.id === 'galaxy_watch_ultra' && smartwatchData.deviceName.includes('Ultra') && isGalaxyWatch);
+
                     return (
-                      <div
-                        key={p.id}
-                        onClick={() => handleProviderSelect(p.id)}
-                        className={`p-3 rounded-2xl border cursor-pointer transition-all ${
-                          isSelected
-                            ? 'border-emerald-600 bg-emerald-50/70 ring-2 ring-emerald-500/20'
-                            : 'border-slate-200 hover:border-slate-300 bg-white'
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => handleModelSelect(m.id, m.provider)}
+                        className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between gap-2.5 ${
+                          isCurrent
+                            ? 'border-indigo-600 bg-indigo-50/80 ring-2 ring-indigo-500/30 shadow-xs'
+                            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/60 bg-white'
                         }`}
                       >
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl">{p.icon}</span>
-                          <span className="font-bold text-xs text-slate-900 leading-tight">{p.name.split('&')[0]}</span>
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="text-xl shrink-0">{m.icon}</span>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-xs text-slate-900 truncate">{m.name}</span>
+                              {m.isFounderChoice && (
+                                <span className="text-[9px] px-1.5 py-0.2 rounded font-black bg-amber-500/20 text-amber-800 border border-amber-300">
+                                  Top Escolha
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-slate-500 block truncate">{m.tag}</span>
+                          </div>
                         </div>
-                        <p className="text-[10px] text-slate-500 mt-1 leading-snug">{p.description}</p>
-                      </div>
+
+                        {isCurrent ? (
+                          <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+                        )}
+                      </button>
                     );
                   })}
                 </div>
               </div>
 
               {/* Live Telemetry Metrics Grid */}
-              <div className="p-5 rounded-3xl bg-slate-900 text-white space-y-4 shadow-md">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs uppercase tracking-wider text-emerald-400 font-bold">
-                      {smartwatchData.deviceName}
+              <div className="p-5 rounded-3xl bg-slate-950 text-white space-y-4 shadow-lg border border-slate-800">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs uppercase tracking-wider text-indigo-400 font-extrabold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>{smartwatchData.deviceName}</span>
                     </span>
-                    <span className="text-[11px] text-slate-400 font-mono">
-                      (Bateria: {smartwatchData.batteryLevelPercent ?? 85}%)
+                    <span className="text-[11px] text-slate-400 font-mono flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded-full border border-white/10">
+                      <BatteryCharging className="w-3 h-3 text-emerald-400" />
+                      <span>{smartwatchData.batteryLevelPercent ?? 90}%</span>
                     </span>
+                    {smartwatchData.vo2Max && (
+                      <span className="text-[10px] font-bold text-cyan-300 bg-cyan-950/60 border border-cyan-800 px-2 py-0.5 rounded-full">
+                        VO2 Max: {smartwatchData.vo2Max}
+                      </span>
+                    )}
+                    {smartwatchData.bodyFatPercentEstimated && (
+                      <span className="text-[10px] font-bold text-amber-300 bg-amber-950/60 border border-amber-800 px-2 py-0.5 rounded-full">
+                        BIA: {smartwatchData.bodyFatPercentEstimated}% Gordura
+                      </span>
+                    )}
                   </div>
 
-                  <button
-                    onClick={syncSmartwatchData}
-                    disabled={isSyncingSmartwatch}
-                    className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer border border-white/15 disabled:opacity-50"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${isSyncingSmartwatch ? 'animate-spin' : ''}`} />
-                    <span>{isSyncingSmartwatch ? 'Sincronizando...' : 'Sincronizar Agora'}</span>
-                  </button>
+                  <div className="flex items-center gap-2 self-start sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={syncSmartwatchData}
+                      disabled={isSyncingSmartwatch}
+                      className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isSyncingSmartwatch ? 'animate-spin' : ''}`} />
+                      <span>{isSyncingSmartwatch ? 'Sincronizando...' : 'Sincronizar Agora'}</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
@@ -266,33 +405,46 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({ isOpen
                     <p className="text-xl font-black text-white tracking-tight">
                       {smartwatchData.activeMinutes} <span className="text-xs font-normal text-slate-400">min</span>
                     </p>
-                    <p className="text-[10px] text-slate-400">{smartwatchData.workoutType || 'Musculação'}</p>
+                    <p className="text-[10px] text-slate-400 truncate">{smartwatchData.workoutType || 'Musculação'}</p>
                   </div>
                 </div>
 
-                <div className="text-[11px] text-slate-400 border-t border-white/10 pt-2 flex items-center justify-between">
-                  <span>Último treino detectado: <strong className="text-white">{smartwatchData.workoutType}</strong></span>
-                  <span>Sincronizado há pouco</span>
+                <div className="text-[11px] text-slate-400 border-t border-white/10 pt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <span>
+                    Último treino detectado: <strong className="text-white">{smartwatchData.workoutType}</strong>
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleVoiceFromWatch}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold transition-colors cursor-pointer border border-white/15"
+                    >
+                      <Mic className="w-3 h-3 text-indigo-400" />
+                      <span>Comando de Voz no Relógio</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
               {/* AI Workout & Nutrition Advice Card */}
               <div className="p-5 rounded-3xl bg-gradient-to-br from-emerald-950 via-slate-900 to-slate-950 text-white border border-emerald-500/30 space-y-4 shadow-md">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-lg bg-emerald-400/20 border border-emerald-300/30 flex items-center justify-center text-emerald-400">
                       <Sparkles className="w-4 h-4" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-sm text-white">Orientação Pós-Treino com IA</h3>
-                      <p className="text-[11px] text-emerald-300/80">Baseado no gasto real de {smartwatchData.caloriesBurnedActive} kcal registrado pelo relógio</p>
+                      <h3 className="font-bold text-sm text-white">Orientação Pós-Treino com IA Gemini</h3>
+                      <p className="text-[11px] text-emerald-300/80">
+                        Baseado no gasto real de {smartwatchData.caloriesBurnedActive} kcal registrado pelo {smartwatchData.deviceName}
+                      </p>
                     </div>
                   </div>
 
                   <button
                     onClick={fetchSmartwatchWorkoutAdvice}
                     disabled={isLoadingAdvice}
-                    className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                    className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-50 self-start sm:self-auto"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>{isLoadingAdvice ? 'Consultando IA...' : 'Gerar Pós-Treino Ideal'}</span>
@@ -343,7 +495,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({ isOpen
 
                     <div className="space-y-1.5 pt-1">
                       <p className="font-bold text-slate-300 text-[11px] uppercase tracking-wider">
-                        Recomendações de Recuperação do Relógio:
+                        Recomendações Clínicas de Recuperação:
                       </p>
                       <ul className="space-y-1 text-slate-300">
                         {smartwatchAdvice.recoveryTips.map((tip, idx) => (
@@ -357,7 +509,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({ isOpen
                   </div>
                 ) : (
                   <p className="text-xs text-slate-400 italic bg-white/5 p-3 rounded-2xl border border-white/5">
-                    Clique em &quot;Gerar Pós-Treino Ideal&quot; para a inteligência artificial analisar a telemetria do seu exercício e sugerir a refeição ideal de reposição.
+                    Clique em &quot;Gerar Pós-Treino Ideal&quot; para a inteligência artificial analisar a telemetria do seu exercício e sugerir a refeição ideal de reposição energética.
                   </p>
                 )}
               </div>
@@ -368,65 +520,141 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({ isOpen
           {activeTab === 'watch_face' && (
             <div className="space-y-5">
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-start gap-2.5">
-                <Info className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <Info className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
                 <span>
-                  O NutriMacro envia dados em tempo real para os <strong>Mostradores e Complicações do Apple Watch</strong> e <strong>Tiles do Wear OS</strong>. Você pode acompanhar suas metas sem abrir o celular.
+                  O NutriMacro espelha dados em tempo real para os mostradores do <strong>{smartwatchData.deviceName}</strong>. Você pode acompanhar as metas de calorias e bater água ou registrar refeição direto pelo pulso.
                 </span>
               </div>
 
-              {/* Interactive Wrist Watch Mockup */}
+              {/* Interactive Wrist Watch Mockup (Adaptive Galaxy Watch Ultra or Apple Watch design) */}
               <div className="flex flex-col items-center justify-center p-6 bg-slate-900 rounded-3xl border border-slate-800 shadow-inner">
                 {/* Watch Strap Top */}
                 <div className="w-32 h-6 bg-slate-800 rounded-t-xl border-t border-x border-slate-700/60" />
 
-                {/* Watch Body */}
-                <div className="w-64 h-72 bg-slate-950 rounded-[42px] border-4 border-slate-700 p-4 shadow-2xl relative flex flex-col justify-between text-white ring-8 ring-slate-900/50">
-                  {/* Top Bar of Watch */}
-                  <div className="flex items-center justify-between text-[11px] font-mono text-emerald-400">
-                    <span className="font-bold">NUTRIMACRO</span>
-                    <span>11:42</span>
-                  </div>
-
-                  {/* Center Circle with Rings */}
-                  <div className="my-auto text-center space-y-2">
-                    <div className="w-28 h-28 mx-auto rounded-full border-4 border-emerald-500/80 border-t-rose-500 border-r-amber-400 flex flex-col items-center justify-center shadow-lg shadow-emerald-500/20">
-                      <span className="text-2xl font-black text-white tracking-tight">
-                        {dailyGoalProgress.proteinRemaining}g
-                      </span>
-                      <span className="text-[10px] text-emerald-300 font-bold uppercase tracking-wider">
-                        Proteína Falta
-                      </span>
-                    </div>
-
-                    <div className="text-[11px] font-semibold text-slate-300">
-                      Restam <strong className="text-white">{dailyGoalProgress.caloriesRemaining} kcal</strong> hoje
-                    </div>
-                  </div>
-
-                  {/* Bottom Quick Action: Water Tap */}
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-[10px]">
-                    <span className="flex items-center gap-1 text-rose-400">
-                      <Flame className="w-3 h-3" />
-                      <span>{smartwatchData.caloriesBurnedActive} kcal ativo</span>
-                    </span>
-
-                    <button
-                      onClick={handleQuickWaterFromWatch}
-                      className="px-2.5 py-1 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-bold flex items-center gap-1 transition-all cursor-pointer active:scale-95 shadow-sm"
-                      title="Toque no relógio para registrar água"
+                {isGalaxyWatch ? (
+                  /* SAMSUNG GALAXY WATCH ULTRA DESIGN (Cushion-shaped titanium case + round AMOLED display) */
+                  <div className="relative flex items-center justify-center">
+                    {/* Orange Quick Action Button on side */}
+                    <div
+                      onClick={handleVoiceFromWatch}
+                      className="absolute -right-3 top-1/2 -translate-y-1/2 w-4 h-12 rounded-r-lg bg-orange-600 border border-orange-400 shadow-md cursor-pointer hover:bg-orange-500 transition-colors z-10 flex items-center justify-center"
+                      title="Botão de Ação Rápida Laranja do Galaxy Watch Ultra (Comando de Voz com IA)"
                     >
-                      <Droplet className="w-3 h-3 text-white" />
-                      <span>+250ml</span>
-                    </button>
+                      <Mic className="w-2.5 h-2.5 text-white" />
+                    </div>
+
+                    {/* Squircle Cushion Case */}
+                    <div className="w-72 h-72 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 rounded-[54px] border-4 border-slate-600 p-3 shadow-2xl flex items-center justify-center relative ring-4 ring-orange-500/30">
+                      {/* Circular AMOLED Display */}
+                      <div className="w-56 h-56 rounded-full bg-black border-2 border-slate-700 p-4 flex flex-col justify-between text-white relative shadow-inner overflow-hidden">
+                        {/* Dial Top */}
+                        <div className="flex items-center justify-between text-[10px] font-mono text-orange-400">
+                          <span className="font-bold flex items-center gap-1">
+                            <span>GALAXY ULTRA</span>
+                          </span>
+                          <span>{new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+
+                        {/* Dial Center (Rings & Macros) */}
+                        <div className="my-auto text-center space-y-1">
+                          <div className="w-24 h-24 mx-auto rounded-full border-4 border-emerald-500 border-t-orange-500 border-r-amber-400 flex flex-col items-center justify-center shadow-lg shadow-orange-500/20">
+                            <span className="text-xl font-black text-white tracking-tight">
+                              {dailyGoalProgress.proteinRemaining}g
+                            </span>
+                            <span className="text-[9px] text-emerald-300 font-bold uppercase tracking-wider">
+                              Proteína
+                            </span>
+                          </div>
+
+                          <div className="text-[10px] font-semibold text-slate-300">
+                            Faltam <strong className="text-white">{dailyGoalProgress.caloriesRemaining} kcal</strong>
+                          </div>
+                        </div>
+
+                        {/* Dial Bottom */}
+                        <div className="flex items-center justify-between pt-1 border-t border-slate-800 text-[10px]">
+                          <span className="flex items-center gap-1 text-orange-400 font-bold text-[9px]">
+                            <Flame className="w-3 h-3 text-orange-500" />
+                            <span>{smartwatchData.caloriesBurnedActive} kcal</span>
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={handleQuickWaterFromWatch}
+                            className="px-2 py-0.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-bold flex items-center gap-1 transition-all cursor-pointer active:scale-95 shadow-sm text-[9px]"
+                            title="Toque para registrar +250ml de água"
+                          >
+                            <Droplet className="w-2.5 h-2.5 text-white" />
+                            <span>+250ml</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  /* APPLE WATCH / RECTANGULAR DESIGN */
+                  <div className="w-64 h-72 bg-slate-950 rounded-[42px] border-4 border-slate-700 p-4 shadow-2xl relative flex flex-col justify-between text-white ring-8 ring-slate-900/50">
+                    <div className="flex items-center justify-between text-[11px] font-mono text-emerald-400">
+                      <span className="font-bold">NUTRIMACRO</span>
+                      <span>{new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+
+                    <div className="my-auto text-center space-y-2">
+                      <div className="w-28 h-28 mx-auto rounded-full border-4 border-emerald-500/80 border-t-rose-500 border-r-amber-400 flex flex-col items-center justify-center shadow-lg shadow-emerald-500/20">
+                        <span className="text-2xl font-black text-white tracking-tight">
+                          {dailyGoalProgress.proteinRemaining}g
+                        </span>
+                        <span className="text-[10px] text-emerald-300 font-bold uppercase tracking-wider">
+                          Proteína Falta
+                        </span>
+                      </div>
+
+                      <div className="text-[11px] font-semibold text-slate-300">
+                        Restam <strong className="text-white">{dailyGoalProgress.caloriesRemaining} kcal</strong> hoje
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-[10px]">
+                      <span className="flex items-center gap-1 text-rose-400">
+                        <Flame className="w-3 h-3" />
+                        <span>{smartwatchData.caloriesBurnedActive} kcal ativo</span>
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={handleQuickWaterFromWatch}
+                        className="px-2.5 py-1 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-bold flex items-center gap-1 transition-all cursor-pointer active:scale-95 shadow-sm"
+                        title="Toque no relógio para registrar água"
+                      >
+                        <Droplet className="w-3 h-3 text-white" />
+                        <span>+250ml</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Watch Strap Bottom */}
                 <div className="w-32 h-6 bg-slate-800 rounded-b-xl border-b border-x border-slate-700/60" />
 
-                <p className="text-[11px] text-slate-400 mt-3 text-center">
-                  Toque no botão <strong className="text-blue-400">+250ml</strong> no relógio acima para simular o registro de hidratação pelo pulso.
-                </p>
+                <div className="flex items-center gap-2 mt-4 text-[11px] text-slate-300">
+                  <button
+                    type="button"
+                    onClick={handleQuickWaterFromWatch}
+                    className="px-3 py-1.5 rounded-xl bg-blue-600/30 hover:bg-blue-600/50 text-blue-200 border border-blue-500/40 font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Droplet className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Testar Toque de Água (+250ml)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleVoiceFromWatch}
+                    className="px-3 py-1.5 rounded-xl bg-orange-600/30 hover:bg-orange-600/50 text-orange-200 border border-orange-500/40 font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Mic className="w-3.5 h-3.5 text-orange-400" />
+                    <span>Testar Voz no Relógio (IA)</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -446,18 +674,18 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({ isOpen
                     onClick={() => handleStrategyChange('eat_back_half')}
                     className={`p-4 rounded-2xl border cursor-pointer transition-all ${
                       smartwatchConfig.calorieStrategy === 'eat_back_half'
-                        ? 'border-emerald-600 bg-emerald-50/70 ring-2 ring-emerald-500/20'
+                        ? 'border-indigo-600 bg-indigo-50/70 ring-2 ring-indigo-500/20'
                         : 'border-slate-200 hover:bg-slate-50 bg-white'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-sm text-slate-900">Compensar 50% do Treino</span>
-                        <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white px-2 py-0.5 rounded-full">
+                        <span className="text-[10px] font-black uppercase tracking-wider bg-indigo-600 text-white px-2 py-0.5 rounded-full">
                           Recomendado
                         </span>
                       </div>
-                      <span className="text-xs font-mono font-bold text-emerald-700">
+                      <span className="text-xs font-mono font-bold text-indigo-700">
                         +{Math.round(smartwatchData.caloriesBurnedActive * 0.5)} kcal na meta
                       </span>
                     </div>
@@ -471,7 +699,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({ isOpen
                     onClick={() => handleStrategyChange('eat_back_all')}
                     className={`p-4 rounded-2xl border cursor-pointer transition-all ${
                       smartwatchConfig.calorieStrategy === 'eat_back_all'
-                        ? 'border-emerald-600 bg-emerald-50/70 ring-2 ring-emerald-500/20'
+                        ? 'border-indigo-600 bg-indigo-50/70 ring-2 ring-indigo-500/20'
                         : 'border-slate-200 hover:bg-slate-50 bg-white'
                     }`}
                   >
@@ -491,7 +719,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({ isOpen
                     onClick={() => handleStrategyChange('maintain_deficit')}
                     className={`p-4 rounded-2xl border cursor-pointer transition-all ${
                       smartwatchConfig.calorieStrategy === 'maintain_deficit'
-                        ? 'border-emerald-600 bg-emerald-50/70 ring-2 ring-emerald-500/20'
+                        ? 'border-indigo-600 bg-indigo-50/70 ring-2 ring-indigo-500/20'
                         : 'border-slate-200 hover:bg-slate-50 bg-white'
                     }`}
                   >
@@ -518,17 +746,27 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({ isOpen
                     type="checkbox"
                     checked={smartwatchConfig.wristHapticReminders}
                     onChange={(e) => updateSmartwatchConfig({ wristHapticReminders: e.target.checked })}
-                    className="w-4 h-4 text-emerald-600 rounded-sm"
+                    className="w-4 h-4 text-indigo-600 rounded-sm"
                   />
                 </label>
 
                 <label className="flex items-center justify-between text-xs text-slate-700 cursor-pointer">
-                  <span>Sincronizar registro de água do Apple Health / Google Health</span>
+                  <span>Sincronizar registro de água do Health Connect / Samsung Health</span>
                   <input
                     type="checkbox"
                     checked={smartwatchConfig.syncWater}
                     onChange={(e) => updateSmartwatchConfig({ syncWater: e.target.checked })}
-                    className="w-4 h-4 text-emerald-600 rounded-sm"
+                    className="w-4 h-4 text-indigo-600 rounded-sm"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between text-xs text-slate-700 cursor-pointer">
+                  <span>Permitir comandos de voz rápidos no microfone do relógio</span>
+                  <input
+                    type="checkbox"
+                    checked={smartwatchConfig.voiceInputEnabled ?? true}
+                    onChange={(e) => updateSmartwatchConfig({ voiceInputEnabled: e.target.checked })}
+                    className="w-4 h-4 text-indigo-600 rounded-sm"
                   />
                 </label>
               </div>
@@ -539,8 +777,8 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({ isOpen
         {/* Footer */}
         <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-1.5 text-xs text-slate-500">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Dados de saúde criptografados e protegidos localmente</span>
+            <ShieldCheck className="w-4 h-4 text-indigo-600" />
+            <span>Dados de saúde protegidos e sincronizados via Health Connect</span>
           </div>
 
           <button

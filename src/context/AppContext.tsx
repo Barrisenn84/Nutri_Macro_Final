@@ -16,6 +16,7 @@ import {
   SmartwatchActivityData,
   SmartwatchConfig,
   SmartwatchAIWorkoutAdvice,
+  SmartwatchProvider,
 } from '../types';
 import {
   FirestoreUserRepository,
@@ -161,6 +162,7 @@ interface AppContextType {
   isSmartwatchModalOpen: boolean;
   setSmartwatchModalOpen: (open: boolean) => void;
   updateSmartwatchConfig: (updates: Partial<SmartwatchConfig>) => void;
+  selectSmartwatchModel: (modelId: string, customProvider?: SmartwatchProvider) => Promise<void>;
   syncSmartwatchData: () => Promise<void>;
   fetchSmartwatchWorkoutAdvice: () => Promise<void>;
 
@@ -269,11 +271,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch {}
     return {
       enabled: true,
-      provider: 'apple_health',
+      provider: 'health_connect',
+      deviceModel: 'galaxy_watch_ultra',
       calorieStrategy: 'eat_back_half',
       autoSync: true,
       syncWater: true,
       wristHapticReminders: true,
+      voiceInputEnabled: true,
     };
   });
 
@@ -281,20 +285,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       if (typeof window !== 'undefined') {
         const saved = localStorage.getItem('nutrimacro_smartwatch_data');
-        if (saved) return JSON.parse(saved);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          // If stored data was the old default Apple Watch, seamlessly migrate to requested Galaxy Watch Ultra
+          if (parsed && parsed.deviceName && parsed.deviceName !== 'Apple Watch Series 9') {
+            return parsed;
+          }
+        }
       }
     } catch {}
     return {
-      provider: 'apple_health',
-      deviceName: 'Apple Watch Series 9',
+      provider: 'health_connect',
+      deviceName: 'Samsung Galaxy Watch Ultra',
+      deviceModel: 'galaxy_watch_ultra',
       connected: true,
       lastSyncedAt: new Date().toISOString(),
-      caloriesBurnedActive: 420,
-      stepsCount: 7850,
-      heartRateAvg: 138,
-      activeMinutes: 52,
-      workoutType: 'Musculação Hipertrofia',
-      batteryLevelPercent: 84,
+      caloriesBurnedActive: 520,
+      stepsCount: 9420,
+      heartRateAvg: 142,
+      activeMinutes: 56,
+      workoutType: 'Musculação Hipertrofia & Cardio',
+      batteryLevelPercent: 91,
+      vo2Max: 50,
+      bodyFatPercentEstimated: 14.5,
     };
   });
 
@@ -723,6 +736,145 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [showToast]
   );
 
+  const selectSmartwatchModel = useCallback(
+    async (modelId: string, customProvider?: SmartwatchProvider) => {
+      let provider: SmartwatchProvider = customProvider || 'health_connect';
+      let deviceName = 'Samsung Galaxy Watch Ultra';
+      let workoutType = 'Musculação Hipertrofia & Cardio';
+      let calories = 520;
+      let steps = 9420;
+      let heartRate = 142;
+      let duration = 56;
+      let battery = 91;
+      let vo2Max = 50;
+      let bodyFat = 14.5;
+
+      if (modelId === 'galaxy_watch_ultra') {
+        provider = 'health_connect';
+        deviceName = 'Samsung Galaxy Watch Ultra';
+        workoutType = 'Musculação Hipertrofia & Cardio';
+        calories = 520;
+        steps = 9420;
+        heartRate = 142;
+        duration = 56;
+        battery = 91;
+        vo2Max = 50;
+        bodyFat = 14.5;
+      } else if (modelId === 'galaxy_watch_7') {
+        provider = 'health_connect';
+        deviceName = 'Samsung Galaxy Watch 7';
+        workoutType = 'Treino Funcional';
+        calories = 460;
+        steps = 8650;
+        heartRate = 136;
+        duration = 50;
+        battery = 88;
+      } else if (modelId === 'galaxy_watch_6') {
+        provider = 'health_connect';
+        deviceName = 'Samsung Galaxy Watch 6 Classic';
+        workoutType = 'Musculação';
+        calories = 430;
+        steps = 7900;
+        heartRate = 134;
+        duration = 48;
+        battery = 82;
+      } else if (modelId === 'apple_watch_ultra_2') {
+        provider = 'apple_health';
+        deviceName = 'Apple Watch Ultra 2';
+        workoutType = 'Musculação Hipertrofia';
+        calories = 490;
+        steps = 8800;
+        heartRate = 140;
+        duration = 54;
+        battery = 94;
+      } else if (modelId === 'apple_watch_s10') {
+        provider = 'apple_health';
+        deviceName = 'Apple Watch Series 10';
+        workoutType = 'Musculação Hipertrofia';
+        calories = 420;
+        steps = 7850;
+        heartRate = 138;
+        duration = 52;
+        battery = 84;
+      } else if (modelId === 'garmin_fenix_8') {
+        provider = 'garmin';
+        deviceName = 'Garmin Fenix 8';
+        workoutType = 'Corrida & Treino de Força';
+        calories = 580;
+        steps = 11200;
+        heartRate = 145;
+        duration = 65;
+        battery = 98;
+        vo2Max = 54;
+      } else if (modelId === 'pixel_watch_3') {
+        provider = 'wear_os';
+        deviceName = 'Google Pixel Watch 3';
+        workoutType = 'Musculação';
+        calories = 410;
+        steps = 7600;
+        heartRate = 132;
+        duration = 45;
+        battery = 82;
+      } else if (modelId === 'amazfit_balance') {
+        provider = 'amazfit';
+        deviceName = 'Amazfit Balance (Zepp OS)';
+        workoutType = 'Musculação';
+        calories = 440;
+        steps = 8100;
+        heartRate = 134;
+        duration = 48;
+        battery = 90;
+      }
+
+      const nextData: SmartwatchActivityData = {
+        provider,
+        deviceName,
+        deviceModel: modelId,
+        connected: true,
+        lastSyncedAt: new Date().toISOString(),
+        caloriesBurnedActive: calories,
+        stepsCount: steps,
+        heartRateAvg: heartRate,
+        activeMinutes: duration,
+        workoutType,
+        batteryLevelPercent: battery,
+        vo2Max,
+        bodyFatPercentEstimated: bodyFat,
+      };
+
+      setSmartwatchData(nextData);
+      setSmartwatchConfig((prev) => {
+        const nextCfg = { ...prev, provider, deviceModel: modelId };
+        try {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('nutrimacro_smartwatch_config', JSON.stringify(nextCfg));
+          }
+        } catch {}
+        return nextCfg;
+      });
+
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('nutrimacro_smartwatch_data', JSON.stringify(nextData));
+        }
+      } catch {}
+
+      // Notify backend
+      try {
+        await fetch('/api/smartwatch/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(nextData),
+        });
+      } catch (err) {
+        console.warn('Sync post error:', err);
+      }
+
+      showToast(`⌚ Dispositivo alterado para ${deviceName}!`);
+    },
+    [showToast]
+  );
+
   const updateSmartwatchConfig = useCallback((updates: Partial<SmartwatchConfig>) => {
     setSmartwatchConfig((prev) => {
       const next = { ...prev, ...updates };
@@ -733,49 +885,112 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch {}
       return next;
     });
+
+    if (updates.provider) {
+      setSmartwatchData((prev) => {
+        let updatedDeviceName = prev.deviceName;
+        let model = prev.deviceModel;
+        if (updates.provider === 'health_connect' || updates.provider === 'samsung_health') {
+          if (!prev.deviceName.includes('Galaxy')) {
+            updatedDeviceName = 'Samsung Galaxy Watch Ultra';
+            model = 'galaxy_watch_ultra';
+          }
+        } else if (updates.provider === 'apple_health') {
+          if (!prev.deviceName.includes('Apple Watch')) {
+            updatedDeviceName = 'Apple Watch Ultra 2';
+            model = 'apple_watch_ultra_2';
+          }
+        } else if (updates.provider === 'garmin') {
+          if (!prev.deviceName.includes('Garmin')) {
+            updatedDeviceName = 'Garmin Fenix 8';
+            model = 'garmin_fenix_8';
+          }
+        } else if (updates.provider === 'wear_os') {
+          if (!prev.deviceName.includes('Pixel')) {
+            updatedDeviceName = 'Google Pixel Watch 3';
+            model = 'pixel_watch_3';
+          }
+        } else if (updates.provider === 'amazfit') {
+          if (!prev.deviceName.includes('Amazfit')) {
+            updatedDeviceName = 'Amazfit Balance (Zepp OS)';
+            model = 'amazfit_balance';
+          }
+        }
+
+        const nextData: SmartwatchActivityData = {
+          ...prev,
+          provider: updates.provider!,
+          deviceName: updatedDeviceName,
+          deviceModel: model,
+          lastSyncedAt: new Date().toISOString(),
+        };
+
+        try {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('nutrimacro_smartwatch_data', JSON.stringify(nextData));
+          }
+        } catch {}
+
+        fetch('/api/smartwatch/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(nextData),
+        }).catch(() => {});
+
+        return nextData;
+      });
+    }
   }, []);
 
   const syncSmartwatchData = useCallback(async () => {
     try {
       setIsSyncingSmartwatch(true);
-      const res = await fetch('/api/smartwatch/status');
-      if (res.ok) {
-        const json = await res.json();
-        if (json.data) {
-          setSmartwatchData(json.data);
-          try {
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('nutrimacro_smartwatch_data', JSON.stringify(json.data));
-            }
-          } catch {}
-          showToast(`⌚ Sincronizado com ${json.data.deviceName}! ${json.data.caloriesBurnedActive} kcal de treino.`);
-          return;
+
+      const refreshed: SmartwatchActivityData = {
+        ...smartwatchData,
+        caloriesBurnedActive: smartwatchData.caloriesBurnedActive + Math.floor(Math.random() * 15 + 10),
+        stepsCount: smartwatchData.stepsCount + Math.floor(Math.random() * 140 + 60),
+        heartRateAvg: Math.min(165, Math.max(115, smartwatchData.heartRateAvg + Math.floor(Math.random() * 5 - 2))),
+        lastSyncedAt: new Date().toISOString(),
+      };
+
+      try {
+        const res = await fetch('/api/smartwatch/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(refreshed),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.data) {
+            setSmartwatchData(json.data);
+            try {
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('nutrimacro_smartwatch_data', JSON.stringify(json.data));
+              }
+            } catch {}
+            showToast(`⌚ Sincronizado com ${json.data.deviceName}! 🔥 ${json.data.caloriesBurnedActive} kcal e 👟 ${json.data.stepsCount.toLocaleString('pt-BR')} passos.`);
+            return;
+          }
         }
+      } catch (fetchErr) {
+        console.warn('Backend sync fallback to local:', fetchErr);
       }
 
-      // Offline bump
-      setSmartwatchData((prev) => {
-        const next: SmartwatchActivityData = {
-          ...prev,
-          caloriesBurnedActive: prev.caloriesBurnedActive + 40,
-          stepsCount: prev.stepsCount + 350,
-          lastSyncedAt: new Date().toISOString(),
-        };
-        try {
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('nutrimacro_smartwatch_data', JSON.stringify(next));
-          }
-        } catch {}
-        return next;
-      });
-      showToast('⌚ Dados do relógio sincronizados com sucesso!');
+      setSmartwatchData(refreshed);
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('nutrimacro_smartwatch_data', JSON.stringify(refreshed));
+        }
+      } catch {}
+      showToast(`⌚ Sincronizado com ${refreshed.deviceName}! 🔥 ${refreshed.caloriesBurnedActive} kcal.`);
     } catch (err) {
       console.warn('Smartwatch sync error:', err);
-      showToast('⌚ Dados do relógio atualizados!');
+      showToast('⌚ Dados do relógio sincronizados!');
     } finally {
       setIsSyncingSmartwatch(false);
     }
-  }, [showToast]);
+  }, [smartwatchData, showToast]);
 
   const fetchSmartwatchWorkoutAdvice = useCallback(async () => {
     try {
@@ -1213,6 +1428,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isSmartwatchModalOpen,
       setSmartwatchModalOpen,
       updateSmartwatchConfig,
+      selectSmartwatchModel,
       syncSmartwatchData,
       fetchSmartwatchWorkoutAdvice,
 
@@ -1312,6 +1528,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isLoadingAdvice,
       isSmartwatchModalOpen,
       updateSmartwatchConfig,
+      selectSmartwatchModel,
       syncSmartwatchData,
       fetchSmartwatchWorkoutAdvice,
     ]

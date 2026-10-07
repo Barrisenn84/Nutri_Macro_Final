@@ -187,8 +187,8 @@ export const Header: React.FC = () => {
             </div>
             <span className="hidden md:inline font-bold">Relógio</span>
             {smartwatchData?.caloriesBurnedActive > 0 && (
-              <span className="hidden xl:inline text-[10px] font-mono font-semibold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-md border border-rose-200">
-                {smartwatchData.caloriesBurnedActive} kcal
+              <span className="hidden xl:inline text-[10px] font-mono font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-md border border-amber-200">
+                +{smartwatchData.caloriesBurnedActive} kcal
               </span>
             )}
           </button>
