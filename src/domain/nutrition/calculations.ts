@@ -1,4 +1,35 @@
-import { Meal, MealItem, MacroTotals, GoalProgress, NutritionTargets, GoalType, NutritionGoals } from '../../types';
+import {
+  Meal,
+  MealItem,
+  MacroTotals,
+  GoalProgress,
+  NutritionTargets,
+  GoalType,
+  NutritionGoals,
+  SmartwatchCalorieStrategy,
+} from '../../types';
+
+/**
+ * Calculates dynamic targets considering active workout burn from smartwatches.
+ */
+export function calculateDynamicDailyTargets(
+  baseTargets: NutritionTargets,
+  activeBurnKcal: number = 0,
+  strategy: SmartwatchCalorieStrategy = 'maintain_deficit'
+): { adjustedCalories: number; extraCaloriesAllowed: number } {
+  let extraCaloriesAllowed = 0;
+
+  if (activeBurnKcal > 0) {
+    if (strategy === 'eat_back_all') {
+      extraCaloriesAllowed = Math.round(activeBurnKcal);
+    } else if (strategy === 'eat_back_half') {
+      extraCaloriesAllowed = Math.round(activeBurnKcal * 0.5);
+    }
+  }
+
+  const adjustedCalories = baseTargets.calories + extraCaloriesAllowed;
+  return { adjustedCalories, extraCaloriesAllowed };
+}
 
 /**
  * Derives the total nutritional values for a single meal item.
@@ -46,13 +77,17 @@ export function calculateDailyTotals(meals: Meal[]): MacroTotals {
 }
 
 /**
- * Calculates user's progress against their daily targets.
+ * Calculates user's progress against their daily targets, with optional smartwatch workout adjustment.
  */
 export function calculateGoalProgress(
   totals: MacroTotals,
-  targets: NutritionTargets
+  targets: NutritionTargets,
+  activeBurnKcal: number = 0,
+  calorieStrategy: SmartwatchCalorieStrategy = 'maintain_deficit'
 ): GoalProgress {
-  const safeCaloriesTarget = Math.max(targets.calories, 1);
+  const { adjustedCalories } = calculateDynamicDailyTargets(targets, activeBurnKcal, calorieStrategy);
+
+  const safeCaloriesTarget = Math.max(adjustedCalories, 1);
   const safeProteinTarget = Math.max(targets.protein, 1);
   const safeCarbsTarget = Math.max(targets.carbs, 1);
   const safeFatTarget = Math.max(targets.fat, 1);
@@ -62,7 +97,7 @@ export function calculateGoalProgress(
   const carbsPercent = Math.min(Math.round((totals.carbs / safeCarbsTarget) * 100), 200);
   const fatPercent = Math.min(Math.round((totals.fat / safeFatTarget) * 100), 200);
 
-  const caloriesRemaining = targets.calories - totals.calories;
+  const caloriesRemaining = adjustedCalories - totals.calories;
   const proteinRemaining = Math.max(0, Math.round((targets.protein - totals.protein) * 10) / 10);
   const carbsRemaining = Math.max(0, Math.round((targets.carbs - totals.carbs) * 10) / 10);
   const fatRemaining = Math.max(0, Math.round((targets.fat - totals.fat) * 10) / 10);
@@ -76,7 +111,9 @@ export function calculateGoalProgress(
     proteinRemaining,
     carbsRemaining,
     fatRemaining,
-    isCaloriesExceeded: totals.calories > targets.calories,
+    isCaloriesExceeded: totals.calories > adjustedCalories,
+    activeBurnKcal: activeBurnKcal > 0 ? activeBurnKcal : undefined,
+    adjustedCaloriesTarget: adjustedCalories !== targets.calories ? adjustedCalories : undefined,
   };
 }
 

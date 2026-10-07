@@ -24,6 +24,7 @@ import { AuthModal } from './components/auth/AuthModal';
 import { VoiceAssistantModal } from './components/voice/VoiceAssistantModal';
 import { MealReminderToast } from './components/notifications/MealReminderToast';
 import { NutritionistReportModal } from './components/export/NutritionistReportModal';
+import { SmartwatchSyncModal } from './components/smartwatch/SmartwatchSyncModal';
 import { Mic, Sparkles, CheckCircle2 } from 'lucide-react';
 
 const AppContent: React.FC = () => {
@@ -31,6 +32,8 @@ const AppContent: React.FC = () => {
     activeTab,
     isAuthModalOpen,
     setAuthModalOpen,
+    isSmartwatchModalOpen,
+    setSmartwatchModalOpen,
     isQuickLogModalOpen,
     setQuickLogModalOpen,
     isAddMealModalOpen,
@@ -185,6 +188,12 @@ const AppContent: React.FC = () => {
       <VoiceAssistantModal
         isOpen={isVoiceAssistantOpen}
         onClose={() => setVoiceAssistantOpen(false)}
+      />
+
+      {/* Smartwatch Health Sync & Wrist Complication Modal */}
+      <SmartwatchSyncModal
+        isOpen={isSmartwatchModalOpen}
+        onClose={() => setSmartwatchModalOpen(false)}
       />
     </div>
   );

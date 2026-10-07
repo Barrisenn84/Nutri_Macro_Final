@@ -18,6 +18,10 @@ import {
   Sun,
   Moon,
   Stethoscope,
+  Watch,
+  Activity,
+  Flame,
+  Footprints,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { MacroOverview } from '../nutrition/MacroOverview';
@@ -43,6 +47,9 @@ export const HomeView: React.FC = () => {
     duplicateMeal,
     notificationSettings,
     setCurrentPage,
+    smartwatchData,
+    smartwatchConfig,
+    setSmartwatchModalOpen,
     setActiveMealTypeForLog,
     setAddMealModalOpen,
   } = useApp();
@@ -197,6 +204,39 @@ export const HomeView: React.FC = () => {
 
       {/* Macro Overview Component (TELA 02) */}
       <MacroOverview />
+
+      {/* Smartwatch Live Telemetry Card */}
+      {smartwatchConfig?.enabled && (
+        <div
+          onClick={() => setSmartwatchModalOpen(true)}
+          className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white border border-emerald-500/30 shadow-xs hover:border-emerald-500/60 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0 group-hover:scale-105 transition-transform">
+              <Watch className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <span>{smartwatchData?.deviceName || 'Smartwatch Conectado'}</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                </span>
+                <span className="text-[10px] text-emerald-300 font-mono bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/60">
+                  {smartwatchData?.workoutType || 'Treino Sincronizado'}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 mt-0.5">
+                🔥 <strong>{smartwatchData?.caloriesBurnedActive || 0} kcal</strong> ativas gastas • 👟 <strong>{(smartwatchData?.stepsCount || 0).toLocaleString('pt-BR')}</strong> passos hoje
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 group-hover:translate-x-0.5 transition-transform">
+            <span>Ajustar no Relógio</span>
+            <ChevronRight className="w-4 h-4" />
+          </div>
+        </div>
+      )}
 
       {/* AI Next Meal Suggestion Card (AI Chef) */}
       <NextMealAISuggestionCard

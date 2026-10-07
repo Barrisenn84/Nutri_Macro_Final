@@ -12,6 +12,7 @@ import {
   generateWeeklyNutritionReview,
   generateBodyCompositionAnalysis,
 } from './server/aiIntelligenceService';
+import { generateSmartwatchWorkoutAdvice } from './server/smartwatchSyncService';
 
 dotenv.config();
 
@@ -909,6 +910,108 @@ Forneça um diagnóstico comercial de alto impacto, projeção de receita para o
       body: 'Hora de registrar seu prato e manter seus macros equilibrados no NutriMacro!',
       mealType,
       timestamp: new Date().toISOString(),
+    });
+  });
+
+  // ==========================================
+  // 13. SMARTWATCH & WEARABLES API ENDPOINTS
+  // ==========================================
+  let activeSmartwatchData: any = {
+    provider: 'apple_health',
+    deviceName: 'Apple Watch Series 9',
+    connected: true,
+    lastSyncedAt: new Date().toISOString(),
+    caloriesBurnedActive: 420,
+    stepsCount: 7850,
+    heartRateAvg: 138,
+    activeMinutes: 52,
+    workoutType: 'Musculação Hipertrofia',
+    batteryLevelPercent: 84,
+  };
+
+  // Sync incoming telemetry from smartwatch / companion apps
+  app.post('/api/smartwatch/sync', (req: Request, res: Response) => {
+    const {
+      provider = 'apple_health',
+      deviceName = 'Smartwatch',
+      caloriesBurnedActive = 0,
+      stepsCount = 0,
+      heartRateAvg = 120,
+      activeMinutes = 30,
+      workoutType = 'Treino Geral',
+      batteryLevelPercent = 85,
+    } = req.body;
+
+    activeSmartwatchData = {
+      provider,
+      deviceName,
+      connected: true,
+      lastSyncedAt: new Date().toISOString(),
+      caloriesBurnedActive: Math.max(0, Math.round(Number(caloriesBurnedActive) || 0)),
+      stepsCount: Math.max(0, Math.round(Number(stepsCount) || 0)),
+      heartRateAvg: Math.max(40, Math.round(Number(heartRateAvg) || 120)),
+      activeMinutes: Math.max(0, Math.round(Number(activeMinutes) || 0)),
+      workoutType,
+      batteryLevelPercent: Math.min(100, Math.max(0, Number(batteryLevelPercent) || 85)),
+    };
+
+    res.json({
+      success: true,
+      message: 'Telemetria do smartwatch sincronizada com sucesso!',
+      data: activeSmartwatchData,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  // Current smartwatch status & metrics
+  app.get('/api/smartwatch/status', (req: Request, res: Response) => {
+    res.json({
+      success: true,
+      connected: Boolean(activeSmartwatchData?.connected),
+      data: activeSmartwatchData,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  // AI Workout Nutrition & Recovery Advice based on Watch Telemetry
+  app.post('/api/smartwatch/ai-workout-advice', async (req: Request, res: Response): Promise<void> => {
+    const { workoutType, caloriesBurned, durationMinutes, heartRateAvg, userGoal } = req.body;
+    const ai = getGenAI();
+
+    try {
+      const advice = await generateSmartwatchWorkoutAdvice(ai, {
+        workoutType: workoutType || activeSmartwatchData.workoutType,
+        caloriesBurned: caloriesBurned || activeSmartwatchData.caloriesBurnedActive,
+        durationMinutes: durationMinutes || activeSmartwatchData.activeMinutes,
+        heartRateAvg: heartRateAvg || activeSmartwatchData.heartRateAvg,
+        userGoal,
+      });
+
+      res.json({
+        success: true,
+        advice,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      console.warn('[Smartwatch Advice Route Warning]:', err?.message || err);
+      res.status(500).json({ success: false, error: 'Falha ao gerar orientações nutricionais do treino.' });
+    }
+  });
+
+  // Ultra-lightweight payload for watch face widgets (Complications & Wear OS Tiles)
+  app.get('/api/smartwatch/complication-data', (req: Request, res: Response) => {
+    const caloriesRemaining = Number(req.query.calRemaining) || 450;
+    const proteinRemaining = Number(req.query.protRemaining) || 35;
+    const waterCurrent = Number(req.query.water) || 1800;
+
+    res.json({
+      app: 'NutriMacro',
+      displayTitle: `${proteinRemaining}g Prot`,
+      displaySubtitle: `${caloriesRemaining} kcal restam`,
+      waterMl: waterCurrent,
+      activeWorkoutKcal: activeSmartwatchData.caloriesBurnedActive,
+      lastSync: activeSmartwatchData.lastSyncedAt,
+      timestamp: Date.now(),
     });
   });
 

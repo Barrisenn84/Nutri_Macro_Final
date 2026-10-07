@@ -96,6 +96,8 @@ export interface GoalProgress {
   carbsRemaining: number;
   fatRemaining: number;
   isCaloriesExceeded: boolean;
+  activeBurnKcal?: number;
+  adjustedCaloriesTarget?: number;
 }
 
 export interface BodyMeasurement {
@@ -300,4 +302,48 @@ export interface NutritionistReportOptions {
   includeHydration?: boolean;
   waterIntakeMl?: number;
 }
+
+// ==========================================
+// SMARTWATCH INTEGRATION TYPES
+// ==========================================
+export type SmartwatchProvider = 'apple_health' | 'health_connect' | 'garmin' | 'wear_os';
+
+export type SmartwatchCalorieStrategy = 'maintain_deficit' | 'eat_back_half' | 'eat_back_all';
+
+export interface SmartwatchActivityData {
+  provider: SmartwatchProvider;
+  deviceName: string;
+  connected: boolean;
+  lastSyncedAt: string;
+  caloriesBurnedActive: number; // Kcal queimadas em treino
+  stepsCount: number; // Passos no dia
+  heartRateAvg: number; // BPM médio
+  activeMinutes: number; // Minutos de treino ativo
+  workoutType?: string; // Ex: "Musculação", "Corrida", "Crossfit"
+  batteryLevelPercent?: number;
+}
+
+export interface SmartwatchConfig {
+  enabled: boolean;
+  provider: SmartwatchProvider;
+  calorieStrategy: SmartwatchCalorieStrategy;
+  autoSync: boolean;
+  syncWater: boolean;
+  wristHapticReminders: boolean;
+}
+
+export interface SmartwatchAIWorkoutAdvice {
+  summary: string;
+  recommendedPostWorkoutSnack: {
+    title: string;
+    description: string;
+    proteinG: number;
+    carbsG: number;
+    fatG: number;
+    calories: number;
+    optimalTimingMinutes: number;
+  };
+  recoveryTips: string[];
+}
+
 

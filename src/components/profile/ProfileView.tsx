@@ -19,6 +19,8 @@ import {
   Stethoscope,
   Share2,
   Crown,
+  Watch,
+  Activity,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { calculateRecommendedTargets } from '../../domain/nutrition/calculations';
@@ -42,6 +44,11 @@ export const ProfileView: React.FC = () => {
     exportUserData,
     setNutritionistReportModalOpen,
     isLoading,
+    smartwatchData,
+    smartwatchConfig,
+    setSmartwatchModalOpen,
+    isSyncingSmartwatch,
+    syncSmartwatchData,
   } = useApp();
 
   const [savedFeedback, setSavedFeedback] = useState(false);
@@ -524,6 +531,87 @@ export const ProfileView: React.FC = () => {
 
       {/* Section: Local Meal Reminders & Notifications */}
       <NotificationSettingsCard />
+
+      {/* Section: Smartwatch & Wearables Sync */}
+      <div className="p-6 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl border border-indigo-500/30 space-y-4 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-indigo-900/60 pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400 shrink-0">
+              <Watch className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <span>Smartwatch & Dispositivos Vestíveis</span>
+                </h3>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1 ${
+                  smartwatchConfig.enabled
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    : 'bg-slate-800 text-slate-400 border border-slate-700'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${smartwatchConfig.enabled ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
+                  {smartwatchConfig.enabled ? 'Sincronizado' : 'Desativado'}
+                </span>
+              </div>
+              <p className="text-xs text-indigo-200/80 mt-0.5">
+                Apple Watch, Galaxy Watch (Wear OS) e Garmin. Telemetria de passos, queima ativa e compensação calórica inteligente.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            id="btn-open-smartwatch-profile"
+            onClick={() => setSmartwatchModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer self-start sm:self-auto"
+          >
+            <Watch className="w-3.5 h-3.5" />
+            <span>Gerenciar Relógio & IA</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+          <div className="p-3 rounded-2xl bg-slate-800/60 border border-slate-700/60">
+            <span className="text-[10px] text-slate-400 block">Provedor Ativo</span>
+            <span className="font-bold text-slate-200 capitalize mt-0.5 block">
+              {smartwatchConfig.provider === 'apple_health'
+                ? 'Apple Health'
+                : smartwatchConfig.provider === 'health_connect'
+                ? 'Health Connect / Google'
+                : smartwatchConfig.provider === 'wear_os'
+                ? 'Wear OS / Galaxy Watch'
+                : smartwatchConfig.provider === 'garmin'
+                ? 'Garmin Connect'
+                : 'Simulador Integrado'}
+            </span>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-slate-800/60 border border-slate-700/60">
+            <span className="text-[10px] text-slate-400 block">Passos de Hoje</span>
+            <span className="font-bold text-indigo-300 mt-0.5 block">
+              {smartwatchData.stepsCount.toLocaleString('pt-BR')} passos
+            </span>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-slate-800/60 border border-slate-700/60">
+            <span className="text-[10px] text-slate-400 block">Gasto Ativo em Treino</span>
+            <span className="font-bold text-amber-300 mt-0.5 block">
+              +{smartwatchData.caloriesBurnedActive} kcal
+            </span>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-slate-800/60 border border-slate-700/60">
+            <span className="text-[10px] text-slate-400 block">Estratégia Calórica</span>
+            <span className="font-bold text-emerald-300 mt-0.5 block">
+              {smartwatchConfig.calorieStrategy === 'eat_back_half'
+                ? 'Comer 50% do Treino'
+                : smartwatchConfig.calorieStrategy === 'eat_back_all'
+                ? 'Comer 100% (Atleta)'
+                : 'Déficit Estrito (0%)'}
+            </span>
+          </div>
+        </div>
+      </div>
 
       {/* Section 3: Data Export (PDF / XLSX / DOC) */}
       <div className="p-6 bg-white rounded-3xl border border-slate-200 space-y-4 shadow-xs">

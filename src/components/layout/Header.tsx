@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Mic,
   Crown,
+  Watch,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
@@ -18,6 +19,8 @@ export const Header: React.FC = () => {
     user,
     isAuthenticated,
     isMasterAdmin,
+    smartwatchData,
+    setSmartwatchModalOpen,
     selectedDate,
     setSelectedDate,
     changeDateByDays,
@@ -167,6 +170,28 @@ export const Header: React.FC = () => {
               <span>Entrar / Login</span>
             </button>
           )}
+
+          {/* Smartwatch Health Sync Button */}
+          <button
+            id="btn-header-smartwatch"
+            type="button"
+            onClick={() => setSmartwatchModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-750 border border-slate-200/80 text-xs font-semibold transition-all cursor-pointer group"
+            title="Sincronização de Smartwatch e Apple Watch"
+          >
+            <div className="relative">
+              <Watch className="w-3.5 h-3.5 text-emerald-600 group-hover:scale-110 transition-transform" />
+              {smartwatchData?.connected && (
+                <span className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+              )}
+            </div>
+            <span className="hidden md:inline font-bold">Relógio</span>
+            {smartwatchData?.caloriesBurnedActive > 0 && (
+              <span className="hidden xl:inline text-[10px] font-mono font-semibold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-md border border-rose-200">
+                {smartwatchData.caloriesBurnedActive} kcal
+              </span>
+            )}
+          </button>
 
           <button
             id="btn-header-voice-assistant"
